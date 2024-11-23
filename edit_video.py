@@ -1,5 +1,6 @@
+import base64
 from dataclasses import dataclass
-from mutagen.mp4 import MP4, MP4FreeForm
+from mutagen.mp4 import MP4, MP4Cover
 import pprint
 
 @dataclass
@@ -21,12 +22,13 @@ class Metadata:
         tv_description:str
         encoded_by:str
         media_kind:int
+        image:str
         
 
 
-def get_video_name(file:str):
+def get_metadata(file:str) ->Metadata:
     video = MP4(file)
-    b = Metadata(
+    return Metadata(
          name=get_name(video),
          artist=get_artist(video),
          album_artist=get_album_artist(video),
@@ -44,8 +46,8 @@ def get_video_name(file:str):
          tv_description=get_tv_description(video),
          encoded_by=get_encoded_by(video),
          media_kind=get_media_kind(video),
+         image=get_image(video)
          )
-    get_image(video)
     
 def get_name(video:MP4) ->str:
     array = video['©nam']
@@ -69,7 +71,10 @@ def get_genre(video:MP4) ->str:
 
 def get_year(video:MP4) ->str:
     array = video['\xa9day']
-    return array[0]
+    max_length = 10
+    cut= array[0][:max_length] if len(array[0]) > max_length else array[10]
+    parts =cut.split("-")
+    return parts[2] + "-" + parts[1] + '-' + parts[0]
 
 def get_track_number(video:MP4) ->str:
     array = video['trkn']
@@ -119,12 +124,10 @@ def get_apple_itunes(video:MP4)->str:
     print("")
 
 def get_image(video:MP4):
-    array = video['covr']
     if "covr" in video:
         cover_data = video["covr"][0]  # Récupérer la première image
-        with open("extracted_cover.jpg", "wb") as f:
-            f.write(cover_data)
-        print("Image extraite et enregistrée sous 'extracted_cover.jpg'.")
+        base64_cover = base64.b64encode(cover_data).decode("utf-8")
+        return base64_cover
     else:
         print("Pas d'image de couverture trouvée.")
 
