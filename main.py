@@ -1,6 +1,6 @@
-import datetime
 import flet as ft
 import edit_video as app
+
 
 #metaData = app.get_metadata("/Volumes/Macintosh HD/Users/seb/Downloads/06 Prudence.mp4")
 metaData = app.get_metadata("/Volumes/Macintosh HD/Users/seb/Downloads/Interior.Chinatown.S01E02.FRENCH.WEBRip.x264-Wawacity.run.mp4")
@@ -13,8 +13,6 @@ def main(page: ft.Page):
         if e.files:
            for file in e.files:
                 app.get_video_name(file.path)
-                #print(file.path)
-                #print(file.name)
 
     # Fonction de callback lorsque la date est changé
     def handle_change(e):
@@ -45,8 +43,6 @@ def main(page: ft.Page):
             width=160,
             on_click=lambda e: page.open(
                 ft.DatePicker(
-                    #first_date=datetime.datetime(year=2023, month=10, day=1),
-                    #last_date=datetime.datetime(year=2024, month=10, day=1),
                     on_change=handle_change,
                 )
             ),
@@ -66,10 +62,8 @@ def main(page: ft.Page):
                 [input_episode_name, input_show_name, ft.Row([input_season, input_episode, input_date]), input_genre, input_episode_description, input_episode_long_description, input_show_description], width=340),
             ft.Column([imgage])
             ])
-
-        
-        
     )
    
+
 
 ft.app(target=main)
