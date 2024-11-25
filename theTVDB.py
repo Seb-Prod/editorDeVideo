@@ -1,66 +1,92 @@
-import tvdb_v4_official
+import base64
+from dataclasses import dataclass
+import re
 import requests
-tvdb = tvdb_v4_official.TVDB("bb42c9ed-bfdc-4ba7-8eef-6187a81023bd")
-# fetching a series
-series = tvdb.get_series(121361)
-print(series['id'])
-#print(series)
+from tvdb_v4_official import TVDB
+
+api_key = "bb42c9ed-bfdc-4ba7-8eef-6187a81023bd"  # Obtenue sur TheTVDB
+tvdb = TVDB(api_key)
 
 
-url = "https://api4.thetvdb.com/v4/login"
-payload = {
-    "apikey": "bb42c9ed-bfdc-4ba7-8eef-6187a81023bd"  # Remplacez par votre clé API
-}
-response = requests.post(url, json=payload)
-#print(f"Statut HTTP : {response.status_code}")  # Log du statut
-#print(f"Réponse brute : {response.text}")  # Log de la réponse complète
-if response.status_code == 200:
-    token = response.json().get("data", {}).get("token")
-    #print(f"Token obtenu : {token}")
-else:
-    print(f"Erreur lors de l'authentification : {response.status_code}, {response.text}")
-serie_id = 121361 
-headers = {
-    "Authorization": f"Bearer {token}",  # Remplacez par le token obtenu
-    "Accept-Language": "fr"
-}
-serie_name = "halo"
-url = f"https://api4.thetvdb.com/v4/series/{serie_id}/translations/fra"  # Remplacez 12345 par un ID valide
+@dataclass
+class TvData:
+    series: tuple
+    saison: int
+    episode:int
 
-response = requests.get(url, headers=headers)
 
-if response.status_code == 200:
-    data = response.json()
-    serie = data.get("data", {})
-    print("Informations de la série :")
-    print(f"Titre : {serie.get('name', 'Inconnu')}")
-    print(f"Résumé : {serie.get('overview', 'Non disponible')}")
-    print(f"Statut : {serie.get('status', 'Non disponible')}")
-    print(f"Première diffusion : {serie.get('firstAired', 'Non disponible')}")
+@dataclass
+class serie_info:
+    id: str
+    nom: str
+    resume: str
+    image:str
     
-else:
-    print(f"Erreur : {response.status_code}, {response.text}")
-  
-    
-url = f"https://api4.thetvdb.com/v4/series/{serie_id}/episodes"
+@dataclass
+class info_episode:
+    id: int
+    saison: int
+    num:int
 
-# Envoi de la requête
-response = requests.get(url, headers=headers)
-print(f"URL : {url}")
-print(f"En-têtes : {headers}")
-print(f"Code de statut : {response.status_code}")
-print(f"Réponse brute : {response.text}")
-# Vérification de la réponse
-if response.status_code == 200:
-    data = response.json()
-    episodes = data.get('data', [])
-    
-    if episodes:
-        print(f"Liste des épisodes de la série avec ID {serie_id}:")
-        for episode in episodes:
-            # Afficher l'ID de l'épisode, son titre et sa saison
-            print(f"Saison {episode['season']}, Épisode {episode['number']}: {episode['name']}")
+
+def find_serie_name(file_name)->TvData:
+
+    info = extract_info(file_name)
+    if info:
+        name = remove_point(info['series'])
+        series = tvdb.search(name)
+
+        # boucle qui récupère le noms des séries trouvé et les ID
+        tableau_liste_series = []
+        for serie in series:
+            serie_id = serie['tvdb_id']
+            try:
+                serie_resume = serie['overviews']['fra']
+            except:
+                serie_resume = serie['overviews']['eng']
+            try:
+                serie_nom = serie['translations']['fra']
+            except:
+                serie_nom = serie['translations']['eng']
+                
+            serie_img = url_to_base64(serie['thumbnail'])
+                
+            tableau_liste_series.append(serie_info(id=serie_id, nom=serie_nom, resume=serie_resume, image=serie_img))
+            
+        return TvData(series=tableau_liste_series, saison=info['season'], episode=info['episode'])
     else:
-        print("Aucun épisode trouvé.")
-else:
-    print(f"Erreur : {response.status_code}, {response.text}")
+        return []
+
+def find_episodes(serie_id:int):
+    info = tvdb.get_series_episodes(serie_id, page=0)
+    tableau_episode =[]
+    for ep in info["episodes"]:
+        tableau_episode.append(info_episode(id=ep['id'], saison=ep['seasonNumber'],num=ep['number']))
+    
+    return tableau_episode
+
+def fetch_episode(id) -> str:
+    episode = tvdb.get_episode_translation(id=id, lang="fra")
+    return episode['overview']
+
+def remove_point(name):
+    return name.replace(".", " ")
+
+
+def extract_info(filename):
+    pattern = r"^(?P<series>.+?)\.S(?P<season>\d{2})E(?P<episode>\d{2})\.(?P<language>[A-Z]+)\.(?P<qualite>\w+)\.(?P<codec>\w+)-(?P<source>\w+)\.\w+\.(?P<extension>\w+)$"
+
+    match = re.match(pattern, filename)
+    if match:
+        return match.groupdict()
+    else:
+        return None
+
+def url_to_base64(url):
+  # Realiza una solicitud HTTP para obtener la imagen
+  response = requests.get(url)
+  response.raise_for_status()  # Levanta una excepción si la solicitud falla
+
+  # Codifica la imagen en base64
+  img_base64 = base64.b64encode(response.content).decode('utf-8')
+  return img_base64

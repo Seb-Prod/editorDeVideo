@@ -31,7 +31,7 @@ def TextFieldMultiLine(label:str, value:str="")->ft.TextField:
 
 def ListDropDown()->ft.dropdown:
     return ft.Dropdown(
-            width=340,
+            width=70,
             text_size=12,
             autofocus=True,
             options=[],
