@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from mutagen.mp4 import MP4
 import images
 
+
 @dataclass
 class Metadata:
     name: str
@@ -29,63 +30,30 @@ class Metadata:
 def get_metadata(file: str) -> Metadata:
     video = MP4(file)
     return Metadata(
-        name=get_name(video),
-        artist=get_artist(video),
-        album_artist=get_album_artist(video),
-        album=get_album(video),
-        genre=get_genre(video),
+        name=get_tag(video, '©nam'),
+        artist=get_tag(video, '\xa9ART'),
+        album_artist=get_tag(video, 'aART'),
+        album=get_tag(video, '\xa9alb'),
+        genre=get_tag(video, '\xa9gen'),
         year=get_year(video),
-        track_number=get_track_number(video),
-        show_name=get_show_name(video),
-        channel=get_channel(video),
-        episode_id=get_episode_id(video),
-        tv_season=get_tv_season(video),
-        tv_episode=get_tv_episode(video),
-        description=get_description(video),
-        long_description=get_long_description(video),
-        tv_description=get_tv_description(video),
-        encoded_by=get_encoded_by(video),
-        media_kind=get_media_kind(video),
+        track_number=tuple(get_tag(video, 'trkn')),
+        show_name=get_tag(video, 'tvsh'),
+        channel=get_tag(video, 'tvnn'),
+        episode_id=get_tag(video, 'tven'),
+        tv_season=get_tag(video, 'tvsn'),
+        tv_episode=get_tag(video, 'tves'),
+        description=get_tag(video, 'desc'),
+        long_description=get_tag(video, 'ldes'),
+        tv_description=get_tag(video, 'sdes'),
+        encoded_by=get_tag(video, '\xa9too'),
+        media_kind=get_tag(video, 'stik'),
         image=get_image(video),
-        apple_itunes=get_apple_itunes(video)
+        apple_itunes=get_tag(video, '----:com.apple.iTunes:iTunMOVI')
     )
 
-
-def get_name(video: MP4) -> str:
+def get_tag(video: MP4, key: str) -> str:
     try:
-        array = video['©nam']
-        return array[0]
-    except KeyError:
-        return ""
-
-
-def get_artist(video: MP4) -> str:
-    try:
-        array = video['\xa9ART']
-        return array[0]
-    except KeyError:
-        return ""
-
-
-def get_album_artist(video: MP4) -> str:
-    try:
-        array = video['aART']
-        return array[0]
-    except KeyError:
-        return ""
-
-
-def get_album(video: MP4) -> str:
-    try:
-        array = video['\xa9alb']
-        return array[0]
-    except KeyError:
-        return ""
-
-
-def get_genre(video: MP4) -> str:
-    try:
-        array = video['\xa9gen']
+        array = video[key]
         return array[0]
     except KeyError:
         return ""
@@ -103,99 +71,6 @@ def get_year(video: MP4) -> str:
         return "15-04-1977"
 
 
-def get_track_number(video: MP4) -> tuple:
-    try:
-        array = video['trkn']
-        return array[0]
-    except KeyError:
-        return []
-
-
-def get_show_name(video: MP4) -> str:
-    try:
-        array = video['tvsh']
-        return array[0]
-    except KeyError:
-        return ""
-
-
-def get_channel(video: MP4) -> str:
-    try:
-        array = video['tvnn']
-        return array[0]
-    except KeyError:
-        return ""
-
-
-def get_episode_id(video: MP4) -> str:
-    try:
-        array = video['tven']
-        return array[0]
-    except KeyError:
-        return ""
-
-
-def get_tv_season(video: MP4) -> int:
-    try:
-        array = video['tvsn']
-        return array[0]
-    except KeyError:
-        return 0
-
-
-def get_tv_episode(video: MP4) -> int:
-    try:
-        array = video['tves']
-        return array[0]
-    except KeyError:
-        return 0
-
-
-def get_description(video: MP4) -> str:
-    try:
-        array = video['desc']
-        return array[0]
-    except KeyError:
-        return ""
-
-
-def get_long_description(video: MP4) -> str:
-    try:
-        array = video['ldes']
-        return array[0]
-    except KeyError:
-        return ""
-
-
-def get_tv_description(video: MP4) -> str:
-    try:
-        array = video['sdes']
-        return array[0]
-    except KeyError:
-        return ""
-
-
-def get_encoded_by(video: MP4) -> str:
-    array = video['\xa9too']
-    return array[0]
-
-
-def get_media_kind(video: MP4) -> int:
-    try:
-        array = video['stik']
-        return array[0]
-    except KeyError:
-        return 0
-
-
-def get_apple_itunes(video: MP4) -> str:
-    try:
-        array = video['----:com.apple.iTunes:iTunMOVI']
-        return array[0]
-    except KeyError:
-        return ""
-
-
 def get_image(video: MP4):
     try:
         if "covr" in video:
@@ -206,8 +81,3 @@ def get_image(video: MP4):
             return images.image_missing
     except KeyError:
         return images.image_missing
-
-
-
-
-    
